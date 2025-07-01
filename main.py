@@ -10,7 +10,6 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlmodel import select
 from mangum import Mangum
 
-
 from db import *
 from models import *
 from tools import *
@@ -205,7 +204,7 @@ def delete_user(request: Request, username: str=Form(...), email: str=Form(...),
 
 
 # ---------------------------------------------------------------------------------------------------
-# Setting up memory with a list called chat_log and UI chat display with a list called chat_responses
+# Setting up memory and sessions with dictionaries 
 # ---------------------------------------------------------------------------------------------------
 chat_sessions = {}
 chat_responses = {}
@@ -213,20 +212,6 @@ system_prompt = {
     "role": "system",
     "content": 'Your primary job is as a Python and FastAPI coding expert, specializing in multiuser applicastions.'
 }
-
-#-----------------------
-# Old, single user setup
-#-----------------------
-"""
-chat_log = [{'role': 'system',
-             'content': 'Your primary job is as a Python and FastAPI coding expert, specializing in multiuser applications'
-           }]
-
-
-chat_responses = []
-
-"""
-
 
 # --------------------------
 # Secured Resource Endpoints
@@ -253,15 +238,11 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
     if user:
         chat_id = user.get('id')
 
-
     chat_sessions[chat_id].append({'role': 'user', 'content': user_input})
     chat_responses[chat_id].append(user_input)
 
-
     #chat_log.append({'role': 'user', 'content': user_input})
     #chat_responses.append(user_input)
-
-
 
     # We're going to get an LLM response or a tool call
     completion = client.chat.completions.create(
@@ -295,18 +276,7 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
                 "content": str(output),
             }
         )
-
-
-        """
-        chat_log.append(
-            {
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": tool_call.function.name,
-                "content": str(output),
-            }
-        )
-        """
+       
 
         # Get the final LLM response
         completion2 = client.chat.completions.create(
@@ -338,7 +308,7 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
         return templates.TemplateResponse("home.html", {'request': request, "chat_responses": chat_responses[chat_id], "msg": msg})
 
 
-# DALL-E ---------------------
+# DALL-E ------
 @app.get("/image", response_class=HTMLResponse)
 def image_page(user: user_dependency, request: Request):
 
