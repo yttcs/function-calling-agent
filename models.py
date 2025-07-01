@@ -1,7 +1,7 @@
 from fastapi import Request, HTTPException, status
 from sqlmodel import SQLModel, Field
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 
@@ -88,20 +88,21 @@ def authenticate_user(username: str, password: str, session):
     return user
 
 def create_access_token(username: str, user_id: int, expires_delta: Optional[timedelta] = None):
-    encode = {'sub': username, "id": user_id}
+    payload = {'sub': username, "id": user_id}
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    encode.update({'exp': expire})
-    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    payload.update({'exp': expire})
+
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
 # --------------------------------------------------------------------
 # get_current_user decodes the JWT for resource endpoint authorization
 # --------------------------------------------------------------------
 
-async def get_current_user(request:Request):
+def get_current_user(request:Request):
     try:
         token = request.cookies.get("access_token")  # get JWT from browser
         if token is None:
@@ -110,7 +111,7 @@ async def get_current_user(request:Request):
         username: str = payload.get('sub')
         user_id: int = payload.get('id')
         if username is None or user_id is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user 1.")
         return {'username': username, 'id': user_id}   # where does this go?
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user 2.")

@@ -10,6 +10,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlmodel import select
 from mangum import Mangum
 
+
 from db import *
 from models import *
 from tools import *
@@ -34,7 +35,7 @@ templates = Jinja2Templates(directory="templates")
 # Here is the /token endpoint that calls the two authentication functions in models.py
 # -------------------------------------------------------------------------------------
 @app.post("/token")
-async def login_for_access_token(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: Session = db_dependency):
+def login_for_access_token(response: Response, form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: Session = db_dependency):
     user = authenticate_user(form_data.username, form_data.password, session)   # authenticate_user function
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
@@ -53,18 +54,18 @@ async def login_for_access_token(response: Response, form_data: Annotated[OAuth2
 #     1. login_for_access_token calls authenticate_user and create_access_token.
 #     2. this results in a JWT access token being place in the user's browser.
 #     3. when the user tries to access a secured endpoint, the endpoint function
-#        will call get_current_user to decode the JWT access token in the user's browser.
-#     4. BUT what is the information in the decoded JWT compared to?
+#        will call get_current_user to decode the JWT access token in the user's browser
+#        to compare it to the issuing backend.
 
 # ----------------------------------------------------------------
 # Register a new user in the DB. These endpoints don't get secured
 # ----------------------------------------------------------------
 @app.get("/create/user", response_class=HTMLResponse)
-async def registration_page(request: Request):
+def registration_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 @app.post("/register", response_class=HTMLResponse)
-async def register_user(request: Request, email: str = Form(...), username: str = Form(...),
+def register_user(request: Request, email: str = Form(...), username: str = Form(...),
                         full_name: str = Form(...), password: str = Form(...), password2: str = Form(...),
                         session: Session = db_dependency):
 
@@ -98,7 +99,7 @@ async def register_user(request: Request, email: str = Form(...), username: str 
 # root - deletes cookie and redirects to the login page
 # -----------------------------------------------------
 @app.get("/")
-async def redirect_logout():
+def redirect_logout():
 
     response = RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
     response.delete_cookie(key="access_token") # if there's a JWT in the browser, delete it.
@@ -120,7 +121,7 @@ async def login(request: Request, session: Session = db_dependency):
         response = RedirectResponse(url="/chat", status_code=status.HTTP_302_FOUND)
 
         # this variable gets its value from "/token"
-        validate_user_cookie = await login_for_access_token(response=response, form_data=form, session=session)
+        validate_user_cookie = login_for_access_token(response=response, form_data=form, session=session)
 
         if not validate_user_cookie:
             msg = "cookie not validated"
@@ -157,7 +158,7 @@ def token_exception():
 # ---------
 
 @app.get("/logout")
-async def logout(request: Request):
+def logout(request: Request):
     msg = "Logout Successful"
     context = {"request": request, "msg": msg}
     response = templates.TemplateResponse("login.html", context)
@@ -169,13 +170,13 @@ async def logout(request: Request):
 # Delete User
 # -----------
 @app.get("/delete_user", response_class=HTMLResponse)
-async def delete_user_page(request: Request):
+def delete_user_page(request: Request):
     context = {"request": request}
     return templates.TemplateResponse("delete_user.html", context)
 
 
 @app.post("/delete_user", response_class=HTMLResponse)
-async def delete_user(request: Request, username: str=Form(...), email: str=Form(...),
+def delete_user(request: Request, username: str=Form(...), email: str=Form(...),
                       session: Session = db_dependency):
 
     try:
@@ -198,6 +199,7 @@ async def delete_user(request: Request, username: str=Form(...), email: str=Form
         # Handle other exceptions (database errors, commit issues, etc.)
         msg = (f"An unexpected error occurred: {e}")
         session.rollback()  # Ensure rollback if an error occurs
+
         context = {"request": request, "msg": msg}
         return templates.TemplateResponse("delete_user.html", context)
 
@@ -205,12 +207,26 @@ async def delete_user(request: Request, username: str=Form(...), email: str=Form
 # ---------------------------------------------------------------------------------------------------
 # Setting up memory with a list called chat_log and UI chat display with a list called chat_responses
 # ---------------------------------------------------------------------------------------------------
+chat_sessions = {}
+chat_responses = {}
+system_prompt = {
+    "role": "system",
+    "content": 'Your primary job is as a Python and FastAPI coding expert, specializing in multiuser applicastions.'
+}
 
+#-----------------------
+# Old, single user setup
+#-----------------------
+"""
 chat_log = [{'role': 'system',
-             'content': 'Your primary job is as a Python coding expert and teacher.'
+             'content': 'Your primary job is as a Python and FastAPI coding expert, specializing in multiuser applications'
            }]
 
+
 chat_responses = []
+
+"""
+
 
 # --------------------------
 # Secured Resource Endpoints
@@ -218,25 +234,41 @@ chat_responses = []
 
 # LLM ---------
 @app.get("/chat", response_class=HTMLResponse)
-async def chat_page(user: user_dependency, request: Request):
-
+def chat_page(user: user_dependency, request: Request):
     if user:
-        context = {"request": request,'chat_responses': chat_responses}
+        chat_id = user.get('id')
+        if chat_id not in chat_sessions:
+            chat_sessions[chat_id] = []
+            chat_responses[chat_id] = []
+            chat_sessions[chat_id].append(system_prompt)
+
+        msg = "chat_id", chat_id, "chat_responses[chat_id]", chat_responses
+        context = {"request": request, 'chat_responses': chat_responses[chat_id], "msg": msg}
         return templates.TemplateResponse("home.html", context)
     else:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
 @app.post("/chat", response_class=HTMLResponse)
-async def chat(request: Request, user_input: Annotated[str, Form()], temperature: float = Form(...)):
+def chat(user: user_dependency, request: Request, user_input: Annotated[str, Form()], temperature: float = Form(...)):
+    if user:
+        chat_id = user.get('id')
 
-    chat_log.append({'role': 'user', 'content': user_input})
-    chat_responses.append(user_input)
+
+    chat_sessions[chat_id].append({'role': 'user', 'content': user_input})
+    chat_responses[chat_id].append(user_input)
+
+
+    #chat_log.append({'role': 'user', 'content': user_input})
+    #chat_responses.append(user_input)
+
+
 
     # We're going to get an LLM response or a tool call
     completion = client.chat.completions.create(
-
         model="gpt-3.5-turbo",
-        messages=chat_log,
+        #messages=chat_log,
+        messages=chat_sessions[chat_id],
+        stream = False,
         temperature=temperature,
         tools=tools,
         tool_choice="auto"
@@ -249,11 +281,13 @@ async def chat(request: Request, user_input: Annotated[str, Form()], temperature
                 args = json.loads(tool_call.function.arguments)
                 output = function_to_call(**args)
 
+
         # provide the LLM's function call back to LLM
-        chat_log.append(completion.choices[0].message)
+        #chat_log.append(completion.choices[0].message)
+        chat_sessions[chat_id].append(completion.choices[0].message)
 
         # provide the function execution result back to the LLM
-        chat_log.append(
+        chat_sessions[chat_id].append(
             {
                 "role": "tool",
                 "tool_call_id": tool_call.id,
@@ -262,11 +296,23 @@ async def chat(request: Request, user_input: Annotated[str, Form()], temperature
             }
         )
 
+
+        """
+        chat_log.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": tool_call.function.name,
+                "content": str(output),
+            }
+        )
+        """
+
         # Get the final LLM response
         completion2 = client.chat.completions.create(
-
             model="gpt-3.5-turbo",
-            messages=chat_log,
+            #messages=chat_log,
+            messages=chat_sessions[chat_id],
             temperature=temperature,
             tools=tools,
             tool_choice="auto"
@@ -274,22 +320,27 @@ async def chat(request: Request, user_input: Annotated[str, Form()], temperature
 
         # return the LLM response to the user
         ai_response = completion2.choices[0].message.content
-        chat_log.append({'role': 'assistant', 'content': ai_response})
-        chat_responses.append(ai_response)
+        chat_sessions[chat_id].append({'role': 'assistant', 'content': ai_response})
+        #chat_log.append({'role': 'assistant', 'content': ai_response})
+        chat_responses[chat_id].append(ai_response)
 
-        return templates.TemplateResponse("home.html", {'request': request, "chat_responses": chat_responses})
+        msg = "chat_id", chat_id, "chat_responses[chat_id]", chat_responses
+        return templates.TemplateResponse("home.html", {'request': request, "chat_responses": chat_responses[chat_id], "msg": msg})
 
     else:
-        ai_response = completion.choices[0].message.content
-        chat_log.append({'role': 'assistant', 'content': ai_response})
-        chat_responses.append(ai_response)
 
-        return templates.TemplateResponse("home.html", {'request': request, "chat_responses": chat_responses})
+        ai_response = completion.choices[0].message.content
+        chat_sessions[chat_id].append({'role': 'assistant', 'content': ai_response})
+        #chat_log.append({'role': 'assistant', 'content': ai_response})
+        chat_responses[chat_id].append(ai_response)
+
+        msg = "chat_id", chat_id, "chat_responses[chat_id]", chat_responses
+        return templates.TemplateResponse("home.html", {'request': request, "chat_responses": chat_responses[chat_id], "msg": msg})
 
 
 # DALL-E ---------------------
 @app.get("/image", response_class=HTMLResponse)
-async def image_page(user: user_dependency, request: Request):
+def image_page(user: user_dependency, request: Request):
 
     if user:
         return templates.TemplateResponse("image.html", {'request': request})
@@ -297,7 +348,7 @@ async def image_page(user: user_dependency, request: Request):
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
 @app.post("/image", response_class=HTMLResponse)
-async def create_image(request: Request, user_input: Annotated[str, Form()]):
+def create_image(request: Request, user_input: Annotated[str, Form()]):
     response = client.images.generate(
         prompt=user_input,
         n=1,
@@ -313,13 +364,14 @@ async def create_image(request: Request, user_input: Annotated[str, Form()]):
 # --------------------------------------------
 
 @app.post("/clear_memory")
-async def clear_memory():
-    chat_log.clear()
-    chat_responses.clear()   # this clears the chat window, so we don't really need this here
+def clear_memory(user:user_dependency):
+    chat_id = user.get('id')
+    chat_sessions[chat_id].clear()
     return {"message": "Memory cleared successfully"}
 
 @app.post("/clear_template")
-async def clear_template():
-    chat_responses.clear()
+def clear_template(user:user_dependency):
+    chat_id = user.get('id')
+    chat_responses[chat_id].clear()
     return {"message": "Template cleared successfully"}
 

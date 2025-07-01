@@ -16,6 +16,8 @@
 
         <textarea class="form-control" placeholder="Type here" name="user_input" rows="3" required></textarea>
         <button class="btn btn-primary btn-sm" type="submit">Send Message</button>
+        <!-- show a progress bar as the completions stream chunks come in - NOT INCORPORATED YET -->
+        <progress id="completion-progress" max ="100" value="0"></progress>
       </div>
     </form>
 
@@ -39,6 +41,13 @@
      fetch('/clear_template', { method: 'POST' }) .then(response => { if (response.ok) { console.log('Template cleared successfully');
      document.querySelector('.card-body').innerHTML = ''; } else { console.error('Failed to clear memory'); } }) .catch(error => { console.error('Error clearing memory:', error); });
      }
+
+     function progressBar() {
+     fetch()
+
+     }
+
+
      </script>
 
     <div>
@@ -59,6 +68,8 @@
         </div> <!-- end of class="card-body" -->
       </div> <!-- end of class="card text_center" -->
          <a class="btn btn-primary btn-sm" type="button" href="/logout">Logout</a>
+        {{msg}}
+
     </div>
 
 </div> <!-- end of class="container" -->
