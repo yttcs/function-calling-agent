@@ -313,6 +313,7 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
 def image_page(user: user_dependency, request: Request):
 
     if user:
+
         return templates.TemplateResponse("image.html", {'request': request})
     else:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
