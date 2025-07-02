@@ -1,4 +1,4 @@
-## Barebones OpenAI function calling agent using the following technology: 
+## Barebones function calling agent using the following technology: 
 
 1. Backend: FastAPI, SQL Model, OpenAI completions API, Tavily Search API
 2. Frontend: Jinja2, Bootstrap, FetchAPI
@@ -8,6 +8,6 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 
 ### Update for week of Jun. 30, 2025:
 
-1. Added multiuser capabilities 
+1. Added multiuser capability
 
 
