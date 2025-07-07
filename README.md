@@ -9,5 +9,8 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 ### Update for week of Jun. 30, 2025:
 
 1. Added multiuser capability
+2. Added Tavily Extract API
+3. Switched LLMs to gpt-4o because gpt-3.5-turbo context length token limit is too restrictive.
+
 
 
