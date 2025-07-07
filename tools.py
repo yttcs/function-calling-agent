@@ -12,17 +12,18 @@ tavily_client = TavilyClient(
 # ---------
 # functions
 # ---------
-def tavily_search(query) -> str:
-    search_result = tavily_client.search(query, max_results=5, topic="general",
-                                         search_depth="advanced", max_tokens=5000)
-    return search_result
+def search(query) -> str:
+    search_result = tavily_client.search(query, max_results=1, topic="general", search_depth="basic", max_tokens=500)
+    extracted_urls = [result['url'] for result in search_result['results']]
+    extract_result = tavily_client.extract(urls=extracted_urls, extract_depth="basic", max_tokens=1000)
+    return extract_result
 
 # --------------
 # Dictionary map
 # --------------
 
 available_functions = {
-    "tavily_search": tavily_search,
+    "search": search
 }
 
 # -------------------
@@ -33,8 +34,8 @@ tools = [{
 
      "type": "function",
      "function": {
-        "name": "tavily_search",
-        "description": "search the web based on the user's query.",
+        "name": "search",
+        "description": "search the web based on the user's query, extract the requested data, and return the results as consicely as possible.",
         "strict": True,
         "parameters": {
             "type": "object",
@@ -47,6 +48,7 @@ tools = [{
         },
 
      },
+
 
 }]
 

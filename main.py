@@ -241,18 +241,16 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
     chat_sessions[chat_id].append({'role': 'user', 'content': user_input})
     chat_responses[chat_id].append(user_input)
 
-    #chat_log.append({'role': 'user', 'content': user_input})
-    #chat_responses.append(user_input)
-
     # We're going to get an LLM response or a tool call
     completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        #messages=chat_log,
+        #model="gpt-3.5-turbo",
+        model="gpt-4o",
         messages=chat_sessions[chat_id],
-        stream = False,
+        stream=False,
         temperature=temperature,
         tools=tools,
-        tool_choice="auto"
+        tool_choice="auto",
+        max_tokens=750
     )
 
     # Test for tool call(s) and iterate through a list of them to execute the corresponding function based on name.
@@ -262,9 +260,7 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
                 args = json.loads(tool_call.function.arguments)
                 output = function_to_call(**args)
 
-
         # provide the LLM's function call back to LLM
-        #chat_log.append(completion.choices[0].message)
         chat_sessions[chat_id].append(completion.choices[0].message)
 
         # provide the function execution result back to the LLM
@@ -276,16 +272,17 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
                 "content": str(output),
             }
         )
-       
 
         # Get the final LLM response
         completion2 = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            #messages=chat_log,
+            #model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=chat_sessions[chat_id],
+            stream=False,
             temperature=temperature,
             tools=tools,
-            tool_choice="auto"
+            tool_choice="auto",
+            max_tokens=3250
         )
 
         # return the LLM response to the user
@@ -301,7 +298,6 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
 
         ai_response = completion.choices[0].message.content
         chat_sessions[chat_id].append({'role': 'assistant', 'content': ai_response})
-        #chat_log.append({'role': 'assistant', 'content': ai_response})
         chat_responses[chat_id].append(ai_response)
 
         msg = "chat_id", chat_id, "chat_responses[chat_id]", chat_responses
