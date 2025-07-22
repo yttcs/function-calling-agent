@@ -16,5 +16,5 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 
 1. Added text to speech using gpt-4o-mini-tts for completion.choices[0].message.content (that means the agent now has a voice)
 2. Adding speech to text using gpt-4o-mini-transcribe (this means that users will be able to talk and/or type their queries)
-   
-note: this hasn't been updated to Git
+
+#### Note: latest features will get uploaded at the end of the week. 
