@@ -15,6 +15,10 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 ### Update for week of Jul. 21, 2025:
 
 1. Added text to speech using gpt-4o-mini-tts for completion.choices[0].message.content (that means the agent now has a voice)
-2. Adding speech to text using gpt-4o-mini-transcribe (this means that users will be able to talk and/or type their queries)
 
-#### Note: latest features will get uploaded at the end of the week. 
+### Note: Update for week of Aug. 11, 2025:
+1. Adding speech to text using gpt-4o-mini-transcribe (this means that users can use voice to make their queries)
+2. Added date tool
+3. Added time tool so the model can access UTC time and convert to user requsted time zone.
+
+### Currently working on error handling and refining tools to avoid orphan tool calls.
