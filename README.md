@@ -21,4 +21,5 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 2. Added date tool
 3. Added time tool so the model can access UTC time and convert to user requsted time zone.
 
-### Currently working on error handling and refining tools to avoid orphan tool calls.
+### Currently working on error handling, refining tools to avoid orphan tool calls, renewal JWT, and code organization.
+
