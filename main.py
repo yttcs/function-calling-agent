@@ -1,8 +1,11 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
+import httpx
 import os
-from dotenv import load_dotenv
+import io
+from scipy.io import wavfile
+import numpy as np
 from typing import Annotated
-from fastapi import FastAPI, Response, Form, Depends
+from fastapi import FastAPI, Response, Form, Depends, File, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
@@ -14,12 +17,16 @@ from db import *
 from models import *
 from tools import *
 
+# import asyncio
+from openai import AsyncOpenAI
+from openai.helpers import LocalAudioPlayer
+from dotenv import load_dotenv
 load_dotenv()
 
-# get keys from .env file - we won't include this file to the GitHub repository
-client = OpenAI(
-    api_key=os.getenv('OPEN_API_SECRET_KEY')
-)
+openai = AsyncOpenAI()
+
+OPENAI_API_SECRET_KEY = os.getenv('OPENAI_API__KEY')
+client = AsyncOpenAI(api_key=OPENAI_API_SECRET_KEY)
 
 app = FastAPI()
 
@@ -227,22 +234,29 @@ def chat_page(user: user_dependency, request: Request):
             chat_responses[chat_id] = []
             chat_sessions[chat_id].append(system_prompt)
 
-        msg = "chat_id", chat_id, "chat_responses[chat_id]", chat_responses
+        msg = "chat_id", chat_id
         context = {"request": request, 'chat_responses': chat_responses[chat_id], "msg": msg}
         return templates.TemplateResponse("home.html", context)
     else:
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
 @app.post("/chat", response_class=HTMLResponse)
-def chat(user: user_dependency, request: Request, user_input: Annotated[str, Form()], temperature: float = Form(...)):
+async def chat(user: user_dependency, request: Request, user_input: Annotated[str, Form()], temperature: float = Form(...), chat_id: int | None = Form(None)):
+
     if user:
         chat_id = user.get('id')
 
-    chat_sessions[chat_id].append({'role': 'user', 'content': user_input})
-    chat_responses[chat_id].append(user_input)
+    if chat_id:
+
+        chat_sessions[chat_id].append({'role': 'user', 'content': user_input})
+        chat_responses[chat_id].append(user_input)
+
+    if chat_id is None:
+        return HTMLResponse(content="User ID not found.", status_code=400)
+
 
     # We're going to get an LLM response or a tool call
-    completion = client.chat.completions.create(
+    completion = await client.chat.completions.create(
         #model="gpt-3.5-turbo",
         model="gpt-4o",
         messages=chat_sessions[chat_id],
@@ -255,26 +269,33 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
 
     # Test for tool call(s) and iterate through a list of them to execute the corresponding function based on name.
     if completion.choices[0].message.tool_calls:
-        for tool_call in completion.choices[0].message.tool_calls:
-            if function_to_call := available_functions.get(tool_call.function.name):
-                args = json.loads(tool_call.function.arguments)
-                output = function_to_call(**args)
+        try:
+            for tool_call in completion.choices[0].message.tool_calls:
+                if function_to_call := available_functions.get(tool_call.function.name):
+                    args = json.loads(tool_call.function.arguments)
+                    output = function_to_call(**args)
 
-        # provide the LLM's function call back to LLM
-        chat_sessions[chat_id].append(completion.choices[0].message)
+            # provide the LLM's function call back to LLM through the chat history
+            chat_sessions[chat_id].append(completion.choices[0].message)
 
-        # provide the function execution result back to the LLM
-        chat_sessions[chat_id].append(
-            {
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": tool_call.function.name,
-                "content": str(output),
-            }
-        )
+            # provide the function execution result back to the LLM through the chat history
+            chat_sessions[chat_id].append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": tool_call.function.name,
+                    "content": str(output),
+                }
+            )
+
+        except Exception as e:
+
+            msg = f"An unexpected error occurred: {e}"
+            return templates.TemplateResponse("home.html", {'request': request, "chat_responses": chat_responses[chat_id],"msg": msg})
+
 
         # Get the final LLM response
-        completion2 = client.chat.completions.create(
+        completion2 = await client.chat.completions.create(
             #model="gpt-3.5-turbo",
             model="gpt-4o",
             messages=chat_sessions[chat_id],
@@ -285,13 +306,26 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
             max_tokens=3250
         )
 
-        # return the LLM response to the user
+
+
+        # return the final LLM response to the user
         ai_response = completion2.choices[0].message.content
         chat_sessions[chat_id].append({'role': 'assistant', 'content': ai_response})
-        #chat_log.append({'role': 'assistant', 'content': ai_response})
         chat_responses[chat_id].append(ai_response)
 
-        msg = "chat_id", chat_id, "chat_responses[chat_id]", chat_responses
+
+        # convert the tool call response to voice
+        async with openai.audio.speech.with_streaming_response.create(
+                model="gpt-4o-mini-tts",
+                voice="alloy",
+                input=ai_response,
+                instructions="Speak in a professional and kind tone.",
+                response_format="pcm",
+        ) as response:
+            await LocalAudioPlayer().play(response)
+
+        msg = "chat_id", chat_id
+
         return templates.TemplateResponse("home.html", {'request': request, "chat_responses": chat_responses[chat_id], "msg": msg})
 
     else:
@@ -300,11 +334,60 @@ def chat(user: user_dependency, request: Request, user_input: Annotated[str, For
         chat_sessions[chat_id].append({'role': 'assistant', 'content': ai_response})
         chat_responses[chat_id].append(ai_response)
 
-        msg = "chat_id", chat_id, "chat_responses[chat_id]", chat_responses
+        async with openai.audio.speech.with_streaming_response.create(
+                model="gpt-4o-mini-tts",
+                voice="alloy",
+                input=ai_response,
+                instructions="Speak in a professional and kind tone.",
+                response_format="pcm",
+        ) as response:
+            await LocalAudioPlayer().play(response)
+
+        msg = "chat_id", chat_id, "chat_responses", chat_responses[chat_id]
+
         return templates.TemplateResponse("home.html", {'request': request, "chat_responses": chat_responses[chat_id], "msg": msg})
 
 
-# DALL-E ------
+# ----------------------
+# Transcription Endpoint
+# ----------------------
+@app.post("/transcribe/")
+async def transcribe_audio(user: user_dependency, file: UploadFile = File(...)):
+
+    if user:
+        chat_id = user.get('id')
+
+    if chat_id is None:
+        return HTMLResponse(content="User ID not found.", status_code=400)
+
+    blob = await file.read()
+    buffer = io.BytesIO(blob)
+    buffer.name = file.filename
+
+    transcription = await client.audio.transcriptions.create(
+       # model="gpt-4o-transcribe",
+       model="whisper-1",
+       file=buffer
+    )
+
+    # save the transcribed audio
+
+    save_path = "transcriptions"
+    os.makedirs(save_path, exist_ok=True)
+    file_path = os.path.join(save_path, f"{file.filename}.txt")
+    with open(file_path, "w") as f:
+       f.write(f"ID: {chat_id} - {transcription.text}\n")
+
+    # Internal call to the /chat API
+
+    timeout_config = httpx.Timeout(90.0)
+    async with httpx.AsyncClient() as internal_call:
+        await internal_call.post("http://localhost:8000/chat", data={"user_input": transcription.text, "temperature": 0.0, "chat_id": chat_id}, timeout = timeout_config)
+
+
+ # -------------
+# DALL-E
+# -------------
 @app.get("/image", response_class=HTMLResponse)
 def image_page(user: user_dependency, request: Request):
 
@@ -325,11 +408,9 @@ def create_image(request: Request, user_input: Annotated[str, Form()]):
     image_url = response.data[0].url
     return templates.TemplateResponse("image.html", {'request': request, 'image_url': image_url})
 
-
 # --------------------------------------------
 # Clear chat log and chat window using fetch()
 # --------------------------------------------
-
 @app.post("/clear_memory")
 def clear_memory(user:user_dependency):
     chat_id = user.get('id')
@@ -341,4 +422,3 @@ def clear_template(user:user_dependency):
     chat_id = user.get('id')
     chat_responses[chat_id].clear()
     return {"message": "Template cleared successfully"}
-

@@ -15,9 +15,12 @@
         </div> <!-- end of class="card-header..." -->
 
         <textarea class="form-control" placeholder="Type here" name="user_input" rows="3" required></textarea>
-        <button class="btn btn-primary btn-sm" type="submit">Send Message</button>
+        <button class="btn btn-primary btn-sm" type="submit">Send Text Message</button>
         <!-- show a progress bar as the completions stream chunks come in - NOT INCORPORATED YET -->
         <progress id="completion-progress" max ="100" value="0"></progress>
+        <button id="startButton"> Record Voice Message</button>
+        <button id="stopButton" disabled > Stop</button>
+
       </div>
     </form>
 
@@ -44,10 +47,53 @@
 
      function progressBar() {
      fetch()
-
      }
 
+     const startButton = document.getElementById('startButton');
+     const stopButton = document.getElementById('stopButton');
 
+     let mediaRecorder;
+     let audioChunks = [];
+
+     startButton.addEventListener('click', async () => {
+         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+         mediaRecorder = new MediaRecorder(stream);
+         mediaRecorder.start();
+
+            mediaRecorder.addEventListener('dataavailable', event => {
+                audioChunks.push(event.data);
+            });
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+     });
+
+
+     stopButton.addEventListener('click', async () => {
+        mediaRecorder.stop();
+        mediaRecorder.addEventListener('stop', async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            audioChunks = [];
+
+            const formData = new FormData();
+               formData.append('file', audioBlob, 'audio.wav');
+
+               const response = await fetch('/transcribe/', {
+                   method: 'POST',
+                   body: formData
+               });
+
+               const data = await response.json();
+               if (data.transcription) {
+                   transcriptionResult.textContent = data.transcription;
+               } else if (data.error) {
+                   transcriptionResult.textContent = 'Error: ' + data.error;
+               }
+        });
+        startButton.disabled = false;
+        stopButton.disabled = true;
+     });
      </script>
 
     <div>
