@@ -10,7 +10,15 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 
 1. Added multiuser capability
 2. Added Tavily Extract API
-3. Switched LLMs to gpt-4o because gpt-3.5-turbo context length token limit is too restrictive.
+3. Switched from gpt-3.5-turbo to gpt-4o
 
+### Update for week of Jul. 21, 2025:
 
+1. Added text to speech using gpt-4o-mini-tts for completion.choices[0].message.content (that means the agent now has a voice)
 
+### Note: Update for week of Aug. 11, 2025:
+1. Adding speech to text using gpt-4o-mini-transcribe (this means that users can use voice to make their queries)
+2. Added date tool
+3. Added time tool so the model can access UTC time and convert to user requsted time zone.
+
+### Currently working on error handling and refining tools to avoid orphan tool calls.
