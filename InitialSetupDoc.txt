@@ -1,0 +1,21 @@
+Make sure you have python or python3 within visual studio code
+
+pip should be installed by default 
+
+if not  curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+
+then run pip install -r requirements.txt when you're in the root directory
+
+you may need to install  -m pip install pymysql and tavily-python
+
+after you need to obtain the api key from tavily
+
+for windows setx TAVILY_API_KEY "{API KEY HERE}" within environmental user variables along with the OPENAI_API_KEY
+
+pip install uvicorn[standard] run main.py
+
+the web browser will be something along the lines of 127.0.0.1.8000 and use the endpoints to switch to the proper route to debug
+
+next would be to pip install passlib[bcrypt] so you can register properly with a hashed and salted password
+
+uvicorn main:app --reload to launch the web browser
