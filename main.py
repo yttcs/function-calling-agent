@@ -18,8 +18,7 @@ from models import *
 from tools import *
 
 # import asyncio
-from openai import AsyncOpenAI
-from openai.helpers import LocalAudioPlayer
+from openai import OpenAI, AsyncOpenAI
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -241,7 +240,7 @@ def chat_page(user: user_dependency, request: Request):
         return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
 
 @app.post("/chat", response_class=HTMLResponse)
-async def chat(user: user_dependency, request: Request, user_input: Annotated[str, Form()], temperature: float = Form(...), chat_id: int | None = Form(None)):
+async def chat(user: user_dependency, request: Request, user_input: Annotated[str, Form()], temperature: float = Form(...), chat_id: Optional[int] = Form(None)):
 
     if user:
         chat_id = user.get('id')
