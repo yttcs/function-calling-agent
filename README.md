@@ -21,6 +21,26 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 2. Added date tool
 3. Added time tool so the model can access UTC time and convert to user requsted time zone.
 
-### Currently working on error handling, refining tools to avoid orphan tool calls, renewal JWT, and code organization.
+### Note: Update for week of Oct. 20, 2025:
+
+1. Added database persistence in combination with in-memory python dict
+2. Employed a hybrid HTMX/JS solution to play TTS in browser from text and voice requests
+3. Added HTMX to avoid full page refreshes
+4. Cleaned up UI
+5. Containerized with Podman
+6. Deployed to AWS ECS/Fargate:  SENTyENT.com
+
+Will refine here and there, but this phase of the project, in the main, is complete.  
+
+### Next Phase:
+
+Take lessons learned from previous phase and apply to off-grid, multi-agent, multi-user, sensor fusion project
+1. Fine tune SLM (either phi-4 variant or gpt-oss 20B)
+2. Purchase hardware
+3. Start making things work together
+4. Deploy in the field
+5. Create a demonstration video
+
+
 
 
