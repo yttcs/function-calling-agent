@@ -32,16 +32,24 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 7. Containerized with Podman
 8. Deployed to AWS ECS/Fargate:  SENTyENT.com
 
-Will refine here and there, but this phase of the project, in the main, is complete.  
+Will work on issues here an there, but, for the most part, this PoC is finished.
+One issue to be solved is that, in chromium based browsers, voice resquests don't receive a voice response because of the stricter user gesture requirements for autoplay.
 
-### Next Phase:
+### Note: Update for week of Nov. 3, 2025:
 
-Take lessons learned from previous phase and apply to off-grid, multi-agent, multi-user, sensor fusion project
-1. Fine tune SLM (either phi-4 variant or gpt-oss 20B)
-2. Purchase hardware
-3. Start making things work together
-4. Deploy in the field
-5. Create a demonstration video
+Modified the web app to run local:
+1. using llama-cpp-python server for LLMs, faster-whisper (SST) and piper (TTS)
+2. SQLite for memory persistence (no multi-user concurrency required offline)
+3. SQLite for user identity
+4. Modifications to chat_history - due to differences in chat templates between LLM/LMMs.
+
+note: this runs surpirsingly well on a nine year old I5 with 32GB of RAM.
+
+### Next up:
+
+Move the voice agent to edge hardware withs some added tools for handling sensor data.
+
+
 
 
 
