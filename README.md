@@ -43,11 +43,12 @@ Modified the web app to run local:
 3. SQLite for user identity
 4. Modifications to chat_history - due to differences in chat templates between LLM/LMMs.
 
-note: this runs surpirsingly well on a nine year old I5 with 32GB of RAM.
+note: this runs surprisingly well on a nine year old I5 with 32GB of RAM.
 
 ### Next up:
 
 Move the voice agent to edge hardware withs some added tools for handling sensor data.
+
 
 
 
