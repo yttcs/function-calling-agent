@@ -47,7 +47,8 @@ note: this runs surprisingly well on a nine year old I5 with 32GB of RAM.
 
 ### Next up:
 
-Move the voice agent to edge hardware withs some added tools for handling sensor data.
+Move the voice agent to edge hardware with some added tools for handling sensor data.
+
 
 
 
