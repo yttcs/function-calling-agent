@@ -45,13 +45,14 @@ Modified the web app to run local:
 
 note: this runs surprisingly well on a nine year old I5 with 32GB of RAM, but it can only handle single image processing.
 
-### As of Jan. 2028:
+### As of Jan. 2026:
 
 1. Object Detection & Spatial Reasoning 
 2. Better consumer hardware
 3. Maybe try Qwen2.5-VL-3B
 4. Start moving this to embedded hardware / realtime sensing
 5. Drive a robot
+
 
 
 
