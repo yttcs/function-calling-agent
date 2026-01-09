@@ -32,7 +32,7 @@ This is a work in progress and it's planned to have multiple updates on a weekly
 7. Containerized with Podman
 8. Deployed to AWS ECS/Fargate:  SENTyENT.com
 
-Will work on issues here an there, but, for the most part, this PoC is finished.
+Will work on issues here and there, but, for the most part, this web PoC is finished. Focusing on local and offgrid now.
 One issue to be solved is that, in chromium based browsers, voice resquests don't receive a voice response because of the stricter user gesture requirements for autoplay.
 
 ### Note: Update for week of Nov. 3, 2025:
@@ -52,6 +52,7 @@ note: this runs surprisingly well on a nine year old I5 with 32GB of RAM, but it
 3. Maybe try Qwen2.5-VL-3B
 4. Start moving this to embedded hardware / realtime sensing
 5. Drive a robot
+
 
 
 
