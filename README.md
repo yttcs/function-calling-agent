@@ -38,16 +38,20 @@ One issue to be solved is that, in chromium based browsers, voice resquests don'
 ### Note: Update for week of Nov. 3, 2025:
 
 Modified the web app to run local:
-1. using llama-cpp-python server for LLMs, faster-whisper (SST) and piper (TTS)
+1. using llama-cpp-python server Qwen2.5-VL-7B, faster-whisper (SST) and piper (TTS)
 2. SQLite for memory persistence (no multi-user concurrency required offline)
-3. SQLite for user identity
-4. Modifications to chat_history - due to differences in chat templates between LLM/LMMs.
+4. Language, image understanding, and tool calling are working great
+4. Podman for containerization
 
-note: this runs surprisingly well on a nine year old I5 with 32GB of RAM.
+note: this runs surprisingly well on a nine year old I5 with 32GB of RAM, but it can only handle single image processing.
 
-### Next up:
+### As of Jan. 2028:
 
-Move the voice agent to edge hardware with some added tools for handling sensor data.
+1. Object Detection & Spatial Reasoning 
+2. Better consumer hardware
+3. Maybe try Qwen2.5-VL-3B
+4. Start moving this to embedded hardware / realtime sensing
+5. Drive a robot
 
 
 
